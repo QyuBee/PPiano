@@ -77,7 +77,8 @@ void Common_Update()
     {
         unsigned int key = getchar();
 
-        if      (key == '1')    newButtons |= (1 << BTN_ACTION1);
+        if      (key == '0')    newButtons |= (1 << BTN_ACTION0);
+        else if (key == '1')    newButtons |= (1 << BTN_ACTION1);
         else if (key == '2')    newButtons |= (1 << BTN_ACTION2);
         else if (key == '3')    newButtons |= (1 << BTN_ACTION3);
         else if (key == '4')    newButtons |= (1 << BTN_ACTION4);
@@ -166,6 +167,7 @@ const char *Common_BtnStr(Common_Button btn)
 {
     switch (btn)
     {
+        case BTN_ACTION0:   return "0";
         case BTN_ACTION1:   return "1";
         case BTN_ACTION2:   return "2";
         case BTN_ACTION3:   return "3";

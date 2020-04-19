@@ -33,6 +33,7 @@ Copyright (c), Firelight Technologies Pty, Ltd 2012-2020.
 
 enum Common_Button
 {
+    BTN_ACTION0,
     BTN_ACTION1,
     BTN_ACTION2,
     BTN_ACTION3,
