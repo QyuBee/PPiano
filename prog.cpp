@@ -11,6 +11,7 @@ int FMOD_Main()
   FMOD::ChannelGroup *mastergroup;
   int numFFT=-1;
   FMOD::System *system;
+
   const char* ytUrl="u9pQFMPAL_s";
   char ytName[200];
   strcpy(ytName,"media/");
@@ -27,7 +28,6 @@ int FMOD_Main()
   {
     fclose(fichier);
   }
-
 
   /*
     Create the system
@@ -51,25 +51,23 @@ int FMOD_Main()
       result=system->isRecording(0, &record[0].isRecording);
       ERRCHECK(result);
 
-      if (record[0].isRecording)
+      if (record[0].isPlaying)
       {
-          system->recordStop(0);
+        result=system->recordStop(0);
+        ERRCHECK(result);
+
+        cleanRecord(record[0]);
       }
       else
       {
-        cleanRecord(record[0]);
         createRecord(record[0], *system);
       }
 
       Common_Sleep(50);
 
-      if (record[0].sound && record[0].channel)
-      {
-        result=record[0].channel->isPlaying(&record[0].isPlaying);
-      //  ERRCHECK(result); // Produit une erreur mais semble pourtant correct => fuite de mémoire
-      }
-
       playRecord(*system,record[0]);
+
+      numFFT=-1;
     }
 
     /*
@@ -77,17 +75,18 @@ int FMOD_Main()
     */
     if (Common_BtnPress(BTN_ACTION1))
     {
-      if (record[1].sound && record[1].channel) {
-        result=record[1].channel->isPlaying(&record[1].isPlaying);    //Channel pas initialisée au premier appel
-      //  ERRCHECK(result); // Produit une erreur qd je desactive mais semble pourtant correct : result=record[1].channel->isPlaying(&isPlaying); => fuite de mémoire
+      if (record[1].isPlaying)
+      {
+        cleanRecord(record[1]);
+      }
+      else
+      {
+        result = system->createSound(ytName, FMOD_LOOP_NORMAL, 0, &record[1].sound);
+        ERRCHECK(result);
       }
 
-      cleanRecord(record[1]);
-
-      result = system->createSound(ytName, FMOD_LOOP_NORMAL, 0, &record[1].sound);
-      ERRCHECK(result);
-
       playRecord(*system,record[1]);
+      numFFT=-1;
     }
 
     result = system->update();
@@ -97,7 +96,9 @@ int FMOD_Main()
         Print the menu to chose what sound to play / FFT to print
     */
     if (record[0].sound){record[0].channel->isPlaying(&record[0].isPlaying);}
+    else{record[0].isPlaying=0;}
     if (record[1].sound){record[1].channel->isPlaying(&record[1].isPlaying);}
+    else{record[1].isPlaying=0;}
     choicePrint(record, numFFT);
 
     /*

@@ -188,10 +188,27 @@ cleanRecord(RECORD_STATE &record)
 {
   FMOD_RESULT result;
   /* Clean up previous record sound */
-  if (record.sound)
+  if (record.sound && record.isPlaying)
   {
       result = record.sound->release();
+      record.sound=NULL;
       ERRCHECK(result);
+  }
+  if (record.dsp && record.changrp)
+  {
+    result = record.changrp->removeDSP(record.dsp);
+    ERRCHECK(result);
+  }
+  if (record.dsp)
+  {
+    result = record.dsp->release();
+    record.dsp=NULL;
+    ERRCHECK(result);
+  }
+  if (record.changrp) {
+    result=record.changrp->release();
+    record.changrp=NULL;
+    ERRCHECK(result);
   }
 }
 
@@ -253,19 +270,7 @@ removeAll(int count, RECORD_STATE *record)
 
   for (int i = 0; i < count; i++)
   {
-    if (record[i].sound)
-    {
-        result = record[i].sound->release();
-        ERRCHECK(result);
-    }
-    if (record[i].dsp)
-    {
-      result = record[i].changrp->removeDSP(record[i].dsp);
-      ERRCHECK(result);
-
-      result = record[i].dsp->release();
-      ERRCHECK(result);
-    }
+    cleanRecord(record[i]);
   }
 }
 
@@ -303,11 +308,7 @@ playRecord(FMOD::System &system, RECORD_STATE &record)
 {
   FMOD_RESULT result;
 
-  if (record.isPlaying && record.sound)
-  {
-      record.channel->stop();     //Channel vide ????
-  }
-  else if (record.sound)
+  if (record.sound)
   {
     result = system.playSound(record.sound, NULL, false, &record.channel);
     ERRCHECK(result);
