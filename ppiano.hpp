@@ -6,6 +6,8 @@
 #include <vector>
 #include <iostream>
 
+static const int MAX_DRIVERS = 2;
+
 struct RECORD_STATE
 {
     FMOD::Sound         *sound;
@@ -14,9 +16,22 @@ struct RECORD_STATE
     FMOD::ChannelGroup  *changrp;
     bool                isPlaying;      // A MODIFiER ET FaiRE UN TRUC AUTO COMME DANS ENIBOOK MAIS J'AI PAS COMPRIS
     bool                isRecording;
+
+    std::vector<int> domFreq;
 };
 
-int
+FMOD_RESULT F_CALLBACK SystemCallback(FMOD_SYSTEM* /*system*/, FMOD_SYSTEM_CALLBACK_TYPE /*type*/, void *, void *, void *userData);
+
+void
+compareFFT(RECORD_STATE *record);
+
+std::vector<int>
+getFreq(FMOD_DSP_PARAMETER_FFT *data);
+
+void
+showFFT(FMOD_DSP_PARAMETER_FFT data, const int column, const int line);
+
+void
 printFFT(RECORD_STATE record);
 
 FMOD::System*
