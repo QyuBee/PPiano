@@ -11,6 +11,23 @@ int FMOD_Main()
   FMOD::ChannelGroup *mastergroup;
   int numFFT=-1;
   FMOD::System *system;
+  const char* ytUrl="u9pQFMPAL_s";
+  char ytName[200];
+  strcpy(ytName,"media/");
+  strcat(ytName,ytUrl);
+  strcat(ytName,".mp3");
+
+  FILE * fichier = fopen(ytName, "r+");
+
+  if (fichier == NULL)
+  {
+    downloadYt(ytUrl);
+  }
+  else
+  {
+    fclose(fichier);
+  }
+
 
   /*
     Create the system
@@ -67,7 +84,7 @@ int FMOD_Main()
 
       cleanRecord(record[1]);
 
-      result = system->createSound("media/piano.mp3", FMOD_LOOP_NORMAL, 0, &record[1].sound);
+      result = system->createSound(ytName, FMOD_LOOP_NORMAL, 0, &record[1].sound);
       ERRCHECK(result);
 
       playRecord(*system,record[1]);

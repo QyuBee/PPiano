@@ -55,4 +55,7 @@ choicePrint(RECORD_STATE *record,int &numFFT);
 void
 playRecord(FMOD::System &system, RECORD_STATE &record);
 
+std::string
+downloadYt(const char* urlVideo);
+
 #endif

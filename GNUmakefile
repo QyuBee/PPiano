@@ -37,9 +37,9 @@ ifneq (${OS},Windows_NT)
 endif
 
 #~~~~ adjust project-specific settings ~~~~
-CPPFLAGS=-I/usr/local/include
+CPPFLAGS=-I/usr/local/include -I/usr/include/python3.8
 # CPPFLAGS+=-I header/path
-LDFLAGS=-L/usr/local/lib -lfmod
+LDFLAGS=-L/usr/local/lib -lfmod -lpython3.8
 # LDFLAGS+=-L library/path -Wl,-rpath,library/path -l library_name
 CFLAGS=
 CXXFLAGS=

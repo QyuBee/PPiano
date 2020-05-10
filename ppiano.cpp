@@ -1,6 +1,9 @@
 #include "ppiano.hpp"
 #include <string>
 
+#include <array>
+#include <memory>
+
 FMOD_RESULT F_CALLBACK SystemCallback(FMOD_SYSTEM* /*system*/, FMOD_SYSTEM_CALLBACK_TYPE /*type*/, void *, void *, void *userData)
 {
     int *recordListChangedCount = (int *)userData;
@@ -38,7 +41,7 @@ showFFT(FMOD_DSP_PARAMETER_FFT data, const int column, const int line)
     }
   }
   for (int i = 0; i < line; i++)  {
-    std::cout << v[line-i] << '\n';
+    std::cout << v[line-i] << '\n'; //PB ?
   }
   for (float i = 1.; i < 51.; i++) {
     std::cout << (int)(i*24.4) << " ";
@@ -311,4 +314,23 @@ playRecord(FMOD::System &system, RECORD_STATE &record)
 
     createDSP(record, system);
   }
+}
+
+
+std::string
+downloadYt(const char *urlVideo)
+{
+  std::array<char, 128> buffer;
+  std::string result;
+  char cmd[200];
+  const char* cmdYt = "youtube-dl -o 'media/%(id)s.%(ext)s' --extract-audio --audio-format mp3 https://youtu.be/";
+  strcpy(cmd,cmdYt);
+  strcat(cmd,urlVideo);
+  std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
+  if (!pipe) throw std::runtime_error("popen() failed!");
+  while (!feof(pipe.get())) {
+      if (fgets(buffer.data(), 128, pipe.get()) != nullptr)
+          result += buffer.data();
+  }
+  return result;
 }
