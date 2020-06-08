@@ -12,17 +12,28 @@ int FMOD_Main()
   int numFFT=-1;
   FMOD::System *system;
 
-  const char* ytUrl="u9pQFMPAL_s";
-  char ytName[200];
-  strcpy(ytName,"media/");
-  strcat(ytName,ytUrl);
-  strcat(ytName,".mp3");
+  Common_Update();
 
-  FILE * fichier = fopen(ytName, "r+");
+  std::string ytUrl;
+
+  std::cout << "Entrez l'URL de la vidéo à jouer" << '\n';
+  std::cin >> ytUrl; //Traitement à prévoir
+
+  std::string ytName="media/"+ytUrl+".mp3";
+
+  FILE * fichier = fopen(ytName.c_str(), "r+");
 
   if (fichier == NULL)
   {
-    downloadYt(ytUrl);
+    Common_Update();
+    std::cout << "Téléchargement de "<< ytUrl << " en cours" << '\n';
+    downloadYt(ytUrl.c_str());
+
+    FILE * fichier = fopen(ytName.c_str(), "r+");
+    if (fichier==NULL) {
+      std::cerr << '\n' <<"~~~~Le téléchargement de la viéo a échoué !~~~~"<< '\n';
+      return 1;
+    }
   }
   else
   {
@@ -81,7 +92,7 @@ int FMOD_Main()
       }
       else
       {
-        result = system->createSound(ytName, FMOD_LOOP_NORMAL, 0, &record[1].sound);
+        result = system->createSound(ytName.c_str(), FMOD_LOOP_NORMAL, 0, &record[1].sound);
         ERRCHECK(result);
       }
 
@@ -107,12 +118,17 @@ int FMOD_Main()
     if (numFFT==1 || numFFT==0) {
         printFFT(record[numFFT]);
 
-        FMOD_DSP_PARAMETER_FFT  *data;
 
-        result = record[numFFT].dsp->getParameterData(FMOD_DSP_FFT_SPECTRUMDATA, (void **)&data, 0, 0, 0);
-        ERRCHECK(result);
+        std::vector<int> domFreq = getFreq(record[numFFT]);
+      /*  for (int i = 0; i < (int) domFreq.size(); i++) {
+          if (domFreq[i] != (record[numFFT].domFreq.empty() ? 0 : record[numFFT].domFreq.back())) {
+            record[numFFT].domFreq.emplace_back(domFreq[i]);
+          }
 
-        record[numFFT].domFreq = getFreq(data);
+      }*/
+        record[numFFT].domFreq=domFreq;
+
+
         std::cout << "Fréquence.s propre.s : ";
         for (auto elem : record[numFFT].domFreq) {
           std::cout << elem << " " ;
@@ -132,19 +148,12 @@ int FMOD_Main()
     Common_Sleep(50);
   } while (!Common_BtnPress(BTN_QUIT));
 
+  std::cout << "\n\n\n DomFreq :\n";
   for (int i = 0; i < (int) record[1].domFreq.size(); i++) {
-    std::cout << "\n\n\n" << (float) record[1].domFreq[i] *24.4  << '\n';
+    std::cout << (float) record[1].domFreq[i] << '\n';
   }
 
-  removeAll(MAX_DRIVERS,record);
-
-  result = system->close();
-  ERRCHECK(result);
-
-  result = system->release();
-  ERRCHECK(result);
-
-  Common_Close();
+  removeAll(MAX_DRIVERS,record, *system);
 
   return 0;
 }

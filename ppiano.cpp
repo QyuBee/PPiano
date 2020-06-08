@@ -4,6 +4,12 @@
 #include <array>
 #include <memory>
 
+#include <stdlib.h>     /* atoi */
+
+double coefHz = 1; //
+double coefNote= 1;
+std::vector<int> coef;
+
 FMOD_RESULT F_CALLBACK SystemCallback(FMOD_SYSTEM* /*system*/, FMOD_SYSTEM_CALLBACK_TYPE /*type*/, void *, void *, void *userData)
 {
     int *recordListChangedCount = (int *)userData;
@@ -20,21 +26,21 @@ showFFT(FMOD_DSP_PARAMETER_FFT data, const int column, const int line)
   for (int bin = 0; bin < column; bin++)
   {
     for (int i = 0; i < line; i++) {
-      if ((data.spectrum[0][bin]*1000000.-10000.*(float)i)/1.>10000.) {
+      if ((data.spectrum[0][bin]-0.01*(float)i)>0.01) {
         v[i].append("# ");
-        if ((float)bin*24.4>=10.) {
+        if ((float)bin*coefHz>=10.) {
           v[i].append(" ");
         }
-        if ((float)bin*24.4>=100.) {
+        if ((float)bin*coefHz>=100.) {
           v[i].append(" ");
         }
       }
       else {
         v[i].append("  ");
-        if ((float)bin*24.4>=10.) {
+        if ((float)bin*coefHz>=10.) {
           v[i].append(" ");
         }
-        if ((float)bin*24.4>=100.) {
+        if ((float)bin*coefHz>=100.) {
           v[i].append(" ");
         }
       }
@@ -43,8 +49,8 @@ showFFT(FMOD_DSP_PARAMETER_FFT data, const int column, const int line)
   for (int i = 0; i < line; i++)  {
     std::cout << v[line-i] << '\n'; //PB ?
   }
-  for (float i = 1.; i < 51.; i++) {
-    std::cout << (int)(i*24.4) << " ";
+  for (float i = 0.; i < 51.; i++) {
+    std::cout << (int)(i*coefHz) << " ";
   }
 }
 
@@ -55,12 +61,8 @@ compareFFT(RECORD_STATE *record)
 
   for (int i = 0; i < MAX_DRIVERS; i++) {
     RECORD_STATE elem = record[i];
-    FMOD_DSP_PARAMETER_FFT  *data;
 
-    result = elem.dsp->getParameterData(FMOD_DSP_FFT_SPECTRUMDATA, (void **)&data, 0, 0, 0);
-    ERRCHECK(result);
-
-    elem.domFreq=getFreq(std::move(data));
+    elem.domFreq=getFreq(elem);
   }
 
   std::cout << "************************" <<'\n';
@@ -76,26 +78,31 @@ compareFFT(RECORD_STATE *record)
 }
 
 std::vector<int>
-getFreq(FMOD_DSP_PARAMETER_FFT *data) {
+getFreq(RECORD_STATE record) {
+  FMOD_RESULT result;
   int max=0;
   std::vector<int> domFreq;
+  FMOD_DSP_PARAMETER_FFT  *data;
 
+  result = record.dsp->getParameterData(FMOD_DSP_FFT_SPECTRUMDATA, (void **)&data, 0, 0, 0);
+  ERRCHECK(result);
 
   for (int bin = 0; bin < data->length/20; bin++) {
     if ((data->spectrum[0][max] <= data->spectrum[0][bin]) && (bin>1)) {
       max=bin;
     }
     else if(data->spectrum[0][max]>0.01 && max>1){
-
+      int i = 0;
       for (auto elem : domFreq) {
-        if ((int) (max*24.4) % (int) (elem) < (int) (0.005 * elem) /* A CALCULER AVEC POURCENTAGE*/ ) {
-          domFreq.emplace_back(max*24.4/* +1 jsp pk*/);
+        i++;
+        if ( !((int) (max) % (int) (elem) < (int) (i*coefNote) || (int) (max) % (int) (elem) > (int) ((elem-i*coefNote))) ) {
+          domFreq.emplace_back((int)max*coefHz);
           break;
         }
       }
 
       if (domFreq.empty()) {
-        domFreq.emplace_back(max*24.4/* +1 jsp pk*/);
+        domFreq.emplace_back((int)max*coefHz);
       }
 
       max=0;
@@ -120,7 +127,7 @@ printFFT(RECORD_STATE record)
   ERRCHECK(result);
 
   //Lenght of the FFT data
-  const int column=(const int)data->length/10;
+  const int column=(const int)data->length/40;
   const int line=10;
 
   showFFT(*data,column,line);
@@ -136,7 +143,20 @@ printFFT(RECORD_STATE record)
   result = record.dsp->getParameterFloat(3,0,d,32);
   ERRCHECK(result);
 
-  std::cout << desc->name << " : " << d <<'\n';
+  std::vector<int> domFreq = getFreq(record);
+
+  int c=0;
+  std::cout << '\n'<< desc->name << " : " << d << "   " << atoi(d) << '\n';
+  if (!domFreq.empty()) {
+    coef.emplace_back(atoi(d)/domFreq[0]);
+    for (int i = 0; i < (int)coef.size(); i++) {
+      c=c+coef[i];
+    }
+    c=c/((int)coef.size());
+    std::cout << domFreq[0] << '\n' << "Coef " << c << '\n';
+    std::cout << c * domFreq[0]<< '\n';
+  }
+
 }
 
 FMOD::System*
@@ -264,7 +284,7 @@ createRecord(RECORD_STATE &record, FMOD::System &system)
 }
 
 void
-removeAll(int count, RECORD_STATE *record)
+removeAll(int count, RECORD_STATE *record, FMOD::System &system)
 {
   FMOD_RESULT result;
 
@@ -272,6 +292,14 @@ removeAll(int count, RECORD_STATE *record)
   {
     cleanRecord(record[i]);
   }
+
+    result = system.close();
+    ERRCHECK(result);
+
+    result = system.release();
+    ERRCHECK(result);
+
+    Common_Close();
 }
 
 void

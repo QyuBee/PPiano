@@ -26,7 +26,7 @@ void
 compareFFT(RECORD_STATE *record);
 
 std::vector<int>
-getFreq(FMOD_DSP_PARAMETER_FFT *data);
+getFreq(RECORD_STATE record);
 
 void
 showFFT(FMOD_DSP_PARAMETER_FFT data, const int column, const int line);
@@ -47,7 +47,7 @@ void
 createRecord(RECORD_STATE &record, FMOD::System &system);
 
 void
-removeAll(int count, RECORD_STATE *record);
+removeAll(int count, RECORD_STATE *record, FMOD::System &system);
 
 void
 choicePrint(RECORD_STATE *record,int &numFFT);
