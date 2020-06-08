@@ -50,12 +50,15 @@ void
 removeAll(int count, RECORD_STATE *record, FMOD::System &system);
 
 void
-choicePrint(RECORD_STATE *record,int &numFFT);
+choicePrint(RECORD_STATE *record,int &numFFT, const char* ytName);
 
 void
 playRecord(FMOD::System &system, RECORD_STATE &record);
 
 std::string
 downloadYt(const char* urlVideo);
+
+std::string
+choseSound();
 
 #endif

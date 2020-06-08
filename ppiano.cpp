@@ -1,10 +1,15 @@
 #include "ppiano.hpp"
 #include <string>
+#include <charconv>
+#include <cstddef>
 
 #include <array>
 #include <memory>
 
 #include <stdlib.h>     /* atoi */
+
+
+#include <filesystem>
 
 double coefHz = 1; //
 double coefNote= 1;
@@ -303,12 +308,12 @@ removeAll(int count, RECORD_STATE *record, FMOD::System &system)
 }
 
 void
-choicePrint(RECORD_STATE *record,int &numFFT)
+choicePrint(RECORD_STATE *record,int &numFFT, const char* ytName)
 {
   Common_Draw("Press %s to quit", Common_BtnStr(BTN_QUIT));
 
   Common_Draw("%s Press %s start / stop recording",(record[0].isPlaying ? "(*)" : "( )"), Common_BtnStr(BTN_ACTION0));
-  Common_Draw("%s Press %s start / stop playback", (record[1].isPlaying ? "(*)" : "( )") ,Common_BtnStr(BTN_ACTION1));
+  Common_Draw("%s Press %s start / stop %s", (record[1].isPlaying ? "(*)" : "( )") ,Common_BtnStr(BTN_ACTION1), ytName);
   Common_Draw("%s Press %s FFT de 0", (numFFT==0 ? "(*)" : "( )") ,Common_BtnStr(BTN_ACTION2));
   Common_Draw("%s Press %s FFT de 1", (numFFT==1 ? "(*)" : "( )") ,Common_BtnStr(BTN_ACTION3));
   Common_Draw("%s Press %s les 2 FFT", (numFFT==2 ? "(*)" : "( )") ,Common_BtnStr(BTN_ACTION4));
@@ -362,4 +367,80 @@ downloadYt(const char *urlVideo)
           result += buffer.data();
   }
   return result;
+}
+
+std::string
+choseSound()
+{
+  std::string ytName;
+  std::string ytUrl;
+
+  namespace fs = std::filesystem;
+  std::string path = "./media/";
+
+  std::vector<std::string> file;
+  for (const auto & entry : fs::directory_iterator(path))
+  {
+      std::cout << entry.path() << '\n';
+      file.emplace_back((std::string)entry.path() );
+  }
+
+  int cursor=0;
+
+  do {
+    Common_Update();
+    int i=0;
+
+    std::cout << "(0) Download on YT"  << '\n';
+    for (const auto & song : file)
+    {
+        i++;
+        std::cout << "(" << i << ") " << song << '\n';
+    }
+
+
+    if (Common_BtnPress(BTN_UP))
+    {
+      cursor=cursor+1;
+    }
+    else if(Common_BtnPress(BTN_DOWN) && cursor>0)
+    {
+      cursor=cursor-1;
+    }
+    std::cout <<  cursor << '\n';
+    Common_Sleep(50);
+  } while(!Common_BtnPress(BTN_MORE));
+
+  if(cursor==0)
+  {
+    std::cout << "Entrez l'URL de la vidéo à jouer" << '\n';
+    std::cin >> ytUrl; //Traitement à prévoir
+
+    ytName="media/"+ytUrl+".mp3";
+
+    FILE * fichier = fopen(ytName.c_str(), "r+");
+
+    if (fichier == NULL)
+    {
+      Common_Update();
+      std::cout << "Téléchargement de "<< ytUrl << " en cours" << '\n';
+      downloadYt(ytUrl.c_str());
+
+      FILE * fichier = fopen(ytName.c_str(), "r+");
+      if (fichier==NULL) {
+        std::cerr << '\n' <<"~~~~Le téléchargement de la viéo a échoué !~~~~"<< '\n';
+      }
+    }
+    else
+    {
+      fclose(fichier);
+    }
+  }
+  else
+  {
+    ytName=file[cursor-1];
+  }
+
+
+  return ytName;
 }

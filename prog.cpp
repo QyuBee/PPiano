@@ -12,34 +12,6 @@ int FMOD_Main()
   int numFFT=-1;
   FMOD::System *system;
 
-  Common_Update();
-
-  std::string ytUrl;
-
-  std::cout << "Entrez l'URL de la vidéo à jouer" << '\n';
-  std::cin >> ytUrl; //Traitement à prévoir
-
-  std::string ytName="media/"+ytUrl+".mp3";
-
-  FILE * fichier = fopen(ytName.c_str(), "r+");
-
-  if (fichier == NULL)
-  {
-    Common_Update();
-    std::cout << "Téléchargement de "<< ytUrl << " en cours" << '\n';
-    downloadYt(ytUrl.c_str());
-
-    FILE * fichier = fopen(ytName.c_str(), "r+");
-    if (fichier==NULL) {
-      std::cerr << '\n' <<"~~~~Le téléchargement de la viéo a échoué !~~~~"<< '\n';
-      return 1;
-    }
-  }
-  else
-  {
-    fclose(fichier);
-  }
-
   /*
     Create the system
   */
@@ -47,6 +19,12 @@ int FMOD_Main()
 
   result=system->update();
   ERRCHECK(result);
+
+  std::string ytNameStr = choseSound();
+
+  const char* ytName= ytNameStr.c_str();
+
+  std::cout << ytNameStr << " "<< ytName << '\n';
 
   /*
       Main loop
@@ -92,7 +70,7 @@ int FMOD_Main()
       }
       else
       {
-        result = system->createSound(ytName.c_str(), FMOD_LOOP_NORMAL, 0, &record[1].sound);
+        result = system->createSound(ytName, FMOD_LOOP_NORMAL, 0, &record[1].sound);
         ERRCHECK(result);
       }
 
@@ -110,14 +88,13 @@ int FMOD_Main()
     else{record[0].isPlaying=0;}
     if (record[1].sound){record[1].channel->isPlaying(&record[1].isPlaying);}
     else{record[1].isPlaying=0;}
-    choicePrint(record, numFFT);
+    choicePrint(record, numFFT, ytName);
 
     /*
         Print the FFT
     */
     if (numFFT==1 || numFFT==0) {
         printFFT(record[numFFT]);
-
 
         std::vector<int> domFreq = getFreq(record[numFFT]);
       /*  for (int i = 0; i < (int) domFreq.size(); i++) {
