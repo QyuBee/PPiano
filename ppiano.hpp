@@ -28,6 +28,8 @@ compareFFT(RECORD_STATE *record);
 std::vector<int>
 getFreq(RECORD_STATE record);
 
+std::vector<int>
+removeHarmonic(std::vector<int> freq);
 void
 showFFT(FMOD_DSP_PARAMETER_FFT data, const int column, const int line);
 

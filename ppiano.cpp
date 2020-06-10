@@ -8,6 +8,7 @@
 
 #include <stdlib.h>     /* atoi */
 
+#include <algorithm>
 
 #include <filesystem>
 
@@ -92,43 +93,69 @@ std::vector<int>
 getFreq(RECORD_STATE record) {
   FMOD_RESULT result;
   int max=0;
-  std::vector<int> domFreq;
+  std::vector<int> freq;
   FMOD_DSP_PARAMETER_FFT  *data;
 
   result = record.dsp->getParameterData(FMOD_DSP_FFT_SPECTRUMDATA, (void **)&data, 0, 0, 0);
   ERRCHECK(result);
 
-  for (int bin = 0; bin < data->length/20; bin++) {
-    if ((data->spectrum[0][max] <= data->spectrum[0][bin]) && (bin>1)) {
+  for (int bin = 0; bin < data->length/20; bin++)
+  {
+    if ((data->spectrum[0][max] <= data->spectrum[0][bin]) && (bin>1)) {        //Je recherche le pic de freq
       max=bin;
     }
-    else if(data->spectrum[0][max]>0.01 && max>1){
-      int i = 0;
-      std::cout << "************************" <<'\n';
-      for (auto elem : domFreq) {
-        i++;
-
-        std::cout << "max :"<<(double)max*(double)coefHz << ", elem :" << elem << ", % :"<< ((int) max* (int) coefHz) % (int) (elem) << ", / :"<< ((double) elem /(double)(((int) max* (int) coefHz) % (int) (elem)))  << " // " << ((double) elem /(double)((int)elem-((int) max* (int) coefHz) % (int) (elem))) <<'\n';
-
-        std::cout << "result :" <<(((double) elem /(double)(((int) max* (int) coefHz) % (int) (elem))) < (coefNote)) << '\n';
-        if (((double) elem /(double)(((int) max* (int) coefHz) % (int) (elem))) > (coefNote) && ((double) elem /(double)((int)elem-((int) max* (int) coefHz) % (int) (elem))) > (coefNote))  {
-          domFreq.emplace_back((int)max*coefHz);
-          break;
-        }
+    else if(data->spectrum[0][max]>0.01 && max>1 ){                              //J'ajoute la freqDom
+      if (freq.empty()) {
+        freq.emplace_back((int)max*coefHz);
       }
-      std::cout << "************************" <<'\n';
-
-      if (domFreq.empty()) {
-        domFreq.emplace_back((int)max*coefHz);
+      else if((freq.back() !=(int)(max*coefHz)))
+      {
+        freq.emplace_back((int)max*coefHz);
       }
-
-      max=0;
+      else{
+        max=0;
+      }
     }
     else{
       max=0;
     }
   }
+  freq=removeHarmonic(freq);
+  return freq;
+}
 
+std::vector<int>
+removeHarmonic(std::vector<int> freq) {
+  std::cout << "************************" <<'\n';
+  std::vector<int> domFreq;
+
+  std::cout << "HARMONIQUE  : ";
+
+  if (!freq.empty()) {
+    domFreq = freq;
+    for (auto elem : freq) {
+      auto it=std::begin(domFreq);
+      while ( it!=std::end(domFreq) ) {
+        int dom=*it;
+        /*
+        if ((elem>dom) &&(dom != elem)) {
+          std::cout << "domfreq :" << dom << ", elem :"<< elem << ", % :"<< (int)(elem % dom) << ", / :"<< (double)((double) dom /((double)(elem%dom)))  << ", // " << (double)((double) dom /((double)(dom-elem%dom))) <<'\n';
+          std::cout << "result :" <<((((double) dom /((double)(elem%dom))) < (coefNote)) || (((double) dom /((double)(dom-elem%dom))) < (coefNote))) << '\n';
+        }
+        */
+        if ( (elem<dom) &&(dom != elem) && ((((double) elem /((double)(dom%elem))) < (coefNote)) || (((double) elem /((double)(elem-dom%elem))) < (coefNote))))  {
+          std::cout << " " << elem;
+          std::cout << " " << *(it)<< " dom " << dom <<" ! ";
+          domFreq.erase(it);
+        }
+        else
+        {
+          it++;
+        }
+      }
+    }
+  }
+  std::cout << "\n" <<"************************" <<'\n';
   return domFreq;
 }
 
@@ -160,7 +187,7 @@ printFFT(RECORD_STATE record)
   result = record.dsp->getParameterFloat(3,0,d,32);
   ERRCHECK(result);
 
-  std::cout  << '\n'<< desc->name << " : " << d << "   " << atoi(d) << '\n';
+  std::cout  << "\n\n"<< desc->name << " : " << d << "   " << atoi(d) << '\n';
 
   /*
       Get the coefHz
