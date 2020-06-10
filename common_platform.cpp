@@ -87,6 +87,7 @@ void Common_Update()
         else if (key == 'k')    newButtons |= (1 << BTN_UP);
         else if (key == 'j')    newButtons |= (1 << BTN_DOWN);
         else if (key == 32)     newButtons |= (1 << BTN_MORE);
+        else if (key == 10)     newButtons |= (1 << BTN_ENTER);
         else if (key == 'q')    newButtons |= (1 << BTN_QUIT);
     }
 
@@ -177,6 +178,7 @@ const char *Common_BtnStr(Common_Button btn)
         case BTN_UP:        return "K";
         case BTN_DOWN:      return "J";
         case BTN_MORE:      return "SPACE";
+        case BTN_ENTER:     return "ENTREE";
         case BTN_QUIT:      return "Q";
         default:            return "Unknown";
     }

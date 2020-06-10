@@ -20,11 +20,24 @@ int FMOD_Main()
   result=system->update();
   ERRCHECK(result);
 
-  std::string ytNameStr = choseSound();
+
+  /*
+    Prepare the video to compare
+  */
+
+  std::string ytNameStr;
+
+  try
+  {
+    ytNameStr = choseSound();
+  }
+  catch(std::string const& erreur)
+  {
+    std::cerr << '\n' << erreur << '\n';
+    return 1;
+  }
 
   const char* ytName= ytNameStr.c_str();
-
-  std::cout << ytNameStr << " "<< ytName << '\n';
 
   /*
       Main loop
@@ -106,11 +119,13 @@ int FMOD_Main()
         record[numFFT].domFreq=domFreq;
 
 
+        std::cout << '\n' << "************************" <<'\n';
         std::cout << "Fréquence.s propre.s : ";
         for (auto elem : record[numFFT].domFreq) {
           std::cout << elem << " " ;
         }
         std::cout << '\n';
+        std::cout << "************************" <<'\n';
     }
     else if (numFFT==2)
     {

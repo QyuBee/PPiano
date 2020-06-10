@@ -43,6 +43,7 @@ enum Common_Button
     BTN_UP,
     BTN_DOWN,
     BTN_MORE,
+    BTN_ENTER,
     BTN_QUIT
 };
 

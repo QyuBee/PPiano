@@ -11,8 +11,8 @@
 
 #include <filesystem>
 
-double coefHz = 1; //
-double coefNote= 1;
+double coefHz = 118.5; // 118-119
+double coefNote= 1.06; //
 std::vector<int> coef;
 
 FMOD_RESULT F_CALLBACK SystemCallback(FMOD_SYSTEM* /*system*/, FMOD_SYSTEM_CALLBACK_TYPE /*type*/, void *, void *, void *userData)
@@ -39,6 +39,9 @@ showFFT(FMOD_DSP_PARAMETER_FFT data, const int column, const int line)
         if ((float)bin*coefHz>=100.) {
           v[i].append(" ");
         }
+        if ((float)bin*coefHz>=1000.) {
+          v[i].append(" ");
+        }
       }
       else {
         v[i].append("  ");
@@ -46,6 +49,9 @@ showFFT(FMOD_DSP_PARAMETER_FFT data, const int column, const int line)
           v[i].append(" ");
         }
         if ((float)bin*coefHz>=100.) {
+          v[i].append(" ");
+        }
+        if ((float)bin*coefHz>=1000.) {
           v[i].append(" ");
         }
       }
@@ -98,13 +104,19 @@ getFreq(RECORD_STATE record) {
     }
     else if(data->spectrum[0][max]>0.01 && max>1){
       int i = 0;
+      std::cout << "************************" <<'\n';
       for (auto elem : domFreq) {
         i++;
-        if ( !((int) (max) % (int) (elem) < (int) (i*coefNote) || (int) (max) % (int) (elem) > (int) ((elem-i*coefNote))) ) {
+
+        std::cout << "max :"<<(double)max*(double)coefHz << ", elem :" << elem << ", % :"<< ((int) max* (int) coefHz) % (int) (elem) << ", / :"<< ((double) elem /(double)(((int) max* (int) coefHz) % (int) (elem)))  << '\n';
+
+        std::cout << "result :" <<(((double) elem /(double)(((int) max* (int) coefHz) % (int) (elem))) < (coefNote)) << '\n';
+        if (((double) elem /(double)(((int) max* (int) coefHz) % (int) (elem))) > (coefNote))  {
           domFreq.emplace_back((int)max*coefHz);
           break;
         }
       }
+      std::cout << "************************" <<'\n';
 
       if (domFreq.empty()) {
         domFreq.emplace_back((int)max*coefHz);
@@ -148,10 +160,15 @@ printFFT(RECORD_STATE record)
   result = record.dsp->getParameterFloat(3,0,d,32);
   ERRCHECK(result);
 
-  std::vector<int> domFreq = getFreq(record);
+  std::cout  << '\n'<< desc->name << " : " << d << "   " << atoi(d) << '\n';
 
+  /*
+      Get the coefHz
+  */
+
+  /*
+  std::cout<< "\n\n" << "************************" <<'\n';
   int c=0;
-  std::cout << '\n'<< desc->name << " : " << d << "   " << atoi(d) << '\n';
   if (!domFreq.empty()) {
     coef.emplace_back(atoi(d)/domFreq[0]);
     for (int i = 0; i < (int)coef.size(); i++) {
@@ -162,6 +179,8 @@ printFFT(RECORD_STATE record)
     std::cout << c * domFreq[0]<< '\n';
   }
 
+  std::cout << "************************" <<'\n';
+  */
 }
 
 FMOD::System*
@@ -346,6 +365,9 @@ playRecord(FMOD::System &system, RECORD_STATE &record)
     result = system.playSound(record.sound, NULL, false, &record.channel);
     ERRCHECK(result);
 
+    result = record.channel->setVolume((float)1);
+    ERRCHECK(result);
+
     createDSP(record, system);
   }
 }
@@ -379,9 +401,9 @@ choseSound()
   std::string path = "./media/";
 
   std::vector<std::string> file;
+  file.emplace_back("Télécharger sur YT");
   for (const auto & entry : fs::directory_iterator(path))
   {
-      std::cout << entry.path() << '\n';
       file.emplace_back((std::string)entry.path() );
   }
 
@@ -391,15 +413,16 @@ choseSound()
     Common_Update();
     int i=0;
 
-    std::cout << "(0) Download on YT"  << '\n';
+    std::cout << "Choisissez la vidéo à jouer en appuyant sur "<< Common_BtnStr(BTN_UP) << " et "<<  Common_BtnStr(BTN_DOWN) << '\n';
     for (const auto & song : file)
     {
-        i++;
         std::cout << "(" << i << ") " << song << '\n';
+        i++;
     }
+    std::cout << "\n\n" <<"Appuyez sur "<< Common_BtnStr(BTN_ENTER) << " pour jouer la vidéo : "<< file[cursor] << '\n';
 
 
-    if (Common_BtnPress(BTN_UP))
+    if (Common_BtnPress(BTN_UP) && cursor<(int)file.size()-1)
     {
       cursor=cursor+1;
     }
@@ -407,12 +430,14 @@ choseSound()
     {
       cursor=cursor-1;
     }
-    std::cout <<  cursor << '\n';
+
     Common_Sleep(50);
-  } while(!Common_BtnPress(BTN_MORE));
+  } while(!Common_BtnPress(BTN_ENTER));
 
   if(cursor==0)
   {
+    Common_Update();
+
     std::cout << "Entrez l'URL de la vidéo à jouer" << '\n';
     std::cin >> ytUrl; //Traitement à prévoir
 
@@ -423,12 +448,12 @@ choseSound()
     if (fichier == NULL)
     {
       Common_Update();
-      std::cout << "Téléchargement de "<< ytUrl << " en cours" << '\n';
+      std::cout << "~~~~Téléchargement de "<< ytUrl << " en cours~~~~" << '\n';
       downloadYt(ytUrl.c_str());
 
       FILE * fichier = fopen(ytName.c_str(), "r+");
       if (fichier==NULL) {
-        std::cerr << '\n' <<"~~~~Le téléchargement de la viéo a échoué !~~~~"<< '\n';
+        throw std::string("~~~~Le téléchargement de la viéo a échoué !~~~~");
       }
     }
     else
@@ -438,7 +463,7 @@ choseSound()
   }
   else
   {
-    ytName=file[cursor-1];
+    ytName=file[cursor];
   }
 
 
