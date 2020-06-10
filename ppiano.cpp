@@ -108,10 +108,10 @@ getFreq(RECORD_STATE record) {
       for (auto elem : domFreq) {
         i++;
 
-        std::cout << "max :"<<(double)max*(double)coefHz << ", elem :" << elem << ", % :"<< ((int) max* (int) coefHz) % (int) (elem) << ", / :"<< ((double) elem /(double)(((int) max* (int) coefHz) % (int) (elem)))  << '\n';
+        std::cout << "max :"<<(double)max*(double)coefHz << ", elem :" << elem << ", % :"<< ((int) max* (int) coefHz) % (int) (elem) << ", / :"<< ((double) elem /(double)(((int) max* (int) coefHz) % (int) (elem)))  << " // " << ((double) elem /(double)((int)elem-((int) max* (int) coefHz) % (int) (elem))) <<'\n';
 
         std::cout << "result :" <<(((double) elem /(double)(((int) max* (int) coefHz) % (int) (elem))) < (coefNote)) << '\n';
-        if (((double) elem /(double)(((int) max* (int) coefHz) % (int) (elem))) > (coefNote))  {
+        if (((double) elem /(double)(((int) max* (int) coefHz) % (int) (elem))) > (coefNote) && ((double) elem /(double)((int)elem-((int) max* (int) coefHz) % (int) (elem))) > (coefNote))  {
           domFreq.emplace_back((int)max*coefHz);
           break;
         }
