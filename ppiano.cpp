@@ -8,12 +8,15 @@
 
 #include <stdlib.h>     /* atoi */
 
-#include <algorithm>
+//#include <algorithm>
 
 #include <filesystem>
 
-double coefHz = 118.5; // 118-119
-double coefNote= 1.06; //
+//#include <gtkmm.h>
+
+double coefHz = 2.93; // 2.93
+double coefNote= 1.; // 3 * ...
+double coefError=1.5;
 std::vector<int> coef;
 
 FMOD_RESULT F_CALLBACK SystemCallback(FMOD_SYSTEM* /*system*/, FMOD_SYSTEM_CALLBACK_TYPE /*type*/, void *, void *, void *userData)
@@ -59,7 +62,7 @@ showFFT(FMOD_DSP_PARAMETER_FFT data, const int column, const int line)
     }
   }
   for (int i = 0; i < line; i++)  {
-    std::cout << v[line-i] << '\n'; //PB ?
+    std::cout << v[line-i] << '\n';
   }
   for (float i = 0.; i < 51.; i++) {
     std::cout << (int)(i*coefHz) << " ";
@@ -74,7 +77,7 @@ compareFFT(RECORD_STATE *record)
   for (int i = 0; i < MAX_DRIVERS; i++) {
     RECORD_STATE elem = record[i];
 
-    elem.domFreq=getFreq(elem);
+    //elem.domFreq=getFreq(elem);
   }
 
   std::cout << "************************" <<'\n';
@@ -90,7 +93,8 @@ compareFFT(RECORD_STATE *record)
 }
 
 std::vector<int>
-getFreq(RECORD_STATE record) {
+getFreq(RECORD_STATE record)
+{
   FMOD_RESULT result;
   int max=0;
   std::vector<int> freq;
@@ -99,7 +103,7 @@ getFreq(RECORD_STATE record) {
   result = record.dsp->getParameterData(FMOD_DSP_FFT_SPECTRUMDATA, (void **)&data, 0, 0, 0);
   ERRCHECK(result);
 
-  for (int bin = 0; bin < data->length/20; bin++)
+  for (int bin = 0; bin < data->length/2; bin++)
   {
     if ((data->spectrum[0][max] <= data->spectrum[0][bin]) && (bin>1)) {        //Je recherche le pic de freq
       max=bin;
@@ -120,15 +124,24 @@ getFreq(RECORD_STATE record) {
       max=0;
     }
   }
+  return freq;
+}
+
+std::vector<int>
+getDomFreq(RECORD_STATE record)
+{
+  std::vector<int> freq;
+  freq=getFreq(record);
   freq=removeHarmonic(freq);
   return freq;
 }
 
 std::vector<int>
-removeHarmonic(std::vector<int> freq) {
-  std::cout << "************************" <<'\n';
+removeHarmonic(std::vector<int> freq)
+{
   std::vector<int> domFreq;
 
+  std::cout << "************************" <<'\n';
   std::cout << "HARMONIQUE  : ";
 
   if (!freq.empty()) {
@@ -137,21 +150,24 @@ removeHarmonic(std::vector<int> freq) {
       auto it=std::begin(domFreq);
       while ( it!=std::end(domFreq) ) {
         int dom=*it;
-        /*
-        if ((elem>dom) &&(dom != elem)) {
-          std::cout << "domfreq :" << dom << ", elem :"<< elem << ", % :"<< (int)(elem % dom) << ", / :"<< (double)((double) dom /((double)(elem%dom)))  << ", // " << (double)((double) dom /((double)(dom-elem%dom))) <<'\n';
-          std::cout << "result :" <<((((double) dom /((double)(elem%dom))) < (coefNote)) || (((double) dom /((double)(dom-elem%dom))) < (coefNote))) << '\n';
+
+        if (dom/elem>1.5) {
+          std::cout << "domfreq :" << dom << ", elem :"<< elem << ", % :"<< (int)(dom % elem) << " result :" <<((dom/elem>1.5) && (((int)(dom+coefError*floor(dom/elem))%elem < 10) || ((int)(dom-coefError*floor(dom/elem))%elem <10) )) << '\n';
+          std::cout << (int)(dom+coefError*floor(dom/elem))%elem << " " << (int)(dom-coefError*floor(dom/elem))%elem << '\n';
         }
-        */
-        if ( (elem<dom) &&(dom != elem) && ((((double) elem /((double)(dom%elem))) < (coefNote)) || (((double) elem /((double)(elem-dom%elem))) < (coefNote))))  {
-          std::cout << " " << elem;
-          std::cout << " " << *(it)<< " dom " << dom <<" ! ";
+
+        if (
+          (dom/elem>1.5) &&
+          (
+            ((int)(dom+coefError*floor(dom/elem))%elem < 10)
+            ||
+            ((int)(dom-coefError*floor(dom/elem))%elem <10)
+          )
+        )
+        {
           domFreq.erase(it);
         }
-        else
-        {
-          it++;
-        }
+        else it++;
       }
     }
   }
@@ -188,16 +204,21 @@ printFFT(RECORD_STATE record)
   ERRCHECK(result);
 
   std::cout  << "\n\n"<< desc->name << " : " << d << "   " << atoi(d) << '\n';
+}
 
+
+
+double
+getCoef(double d, std::vector<int> domFreq)
+{
   /*
       Get the coefHz
   */
 
-  /*
   std::cout<< "\n\n" << "************************" <<'\n';
-  int c=0;
+  double c;
   if (!domFreq.empty()) {
-    coef.emplace_back(atoi(d)/domFreq[0]);
+    coef.emplace_back((double)(d/domFreq[0]));
     for (int i = 0; i < (int)coef.size(); i++) {
       c=c+coef[i];
     }
@@ -207,7 +228,7 @@ printFFT(RECORD_STATE record)
   }
 
   std::cout << "************************" <<'\n';
-  */
+  return c;
 }
 
 FMOD::System*
@@ -299,6 +320,11 @@ createDSP(RECORD_STATE &record, FMOD::System &system)
 
   result= system.createDSPByType(FMOD_DSP_TYPE_FFT,&record.dsp);
   ERRCHECK(result);
+
+  int window = 16384;
+  result=record.dsp->setParameterInt(FMOD_DSP_FFT_WINDOWSIZE, window);
+  ERRCHECK(result);
+
 
   result = record.changrp->addDSP(0, record.dsp);
   ERRCHECK(result);
@@ -496,3 +522,12 @@ choseSound()
 
   return ytName;
 }
+
+/*void
+showWindow(std::vector<std::string> fft)
+{
+  for (auto elem:fft) {
+    Gtk::Label etiquette(elem+'\n');
+  }
+}
+*/

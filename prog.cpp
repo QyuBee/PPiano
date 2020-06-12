@@ -109,7 +109,7 @@ int FMOD_Main()
     if (numFFT==1 || numFFT==0) {
         printFFT(record[numFFT]);
 
-        std::vector<int> domFreq = getFreq(record[numFFT]);
+        std::vector<int> domFreq = getDomFreq(record[numFFT]);
       /*  for (int i = 0; i < (int) domFreq.size(); i++) {
           if (domFreq[i] != (record[numFFT].domFreq.empty() ? 0 : record[numFFT].domFreq.back())) {
             record[numFFT].domFreq.emplace_back(domFreq[i]);
