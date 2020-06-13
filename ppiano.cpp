@@ -61,12 +61,26 @@ showFFT(FMOD_DSP_PARAMETER_FFT data, const int column, const int line)
       }
     }
   }
-  for (int i = 0; i < line; i++)  {
-    std::cout << v[line-i] << '\n';
+
+
+  if (!v.empty()) {
+    for (int k = 75; k < 500 ; k=k+75) {
+      for (int i = 0; i < line; i++)  {
+        for (int j = k-75; j < k; j++) {
+          if ((int)v[line-i].length() >= j) {
+            std::cout << v[line-i][j];
+          }
+        }
+        std::cout << '\n';
+      }
+      for (int i = k-75; i < k; i++) {
+        std::cout << (int)((float)i*coefHz) << " ";
+      }
+      std::cout << "\n\n\n";
+    }
   }
-  for (float i = 0.; i < 51.; i++) {
-    std::cout << (int)(i*coefHz) << " ";
-  }
+
+
 }
 
 void
@@ -141,8 +155,8 @@ removeHarmonic(std::vector<int> freq)
 {
   std::vector<int> domFreq;
 
-  std::cout << "************************" <<'\n';
-  std::cout << "HARMONIQUE  : ";
+  //std::cout << "************************" <<'\n';
+  //std::cout << "HARMONIQUE  : ";
 
   if (!freq.empty()) {
     domFreq = freq;
@@ -152,8 +166,8 @@ removeHarmonic(std::vector<int> freq)
         int dom=*it;
 
         if (dom/elem>1.5) {
-          std::cout << "domfreq :" << dom << ", elem :"<< elem << ", % :"<< (int)(dom % elem) << " result :" <<((dom/elem>1.5) && (((int)(dom+coefError*floor(dom/elem))%elem < 10) || ((int)(dom-coefError*floor(dom/elem))%elem <10) )) << '\n';
-          std::cout << (int)(dom+coefError*floor(dom/elem))%elem << " " << (int)(dom-coefError*floor(dom/elem))%elem << '\n';
+          //std::cout << "domfreq :" << dom << ", elem :"<< elem << ", % :"<< (int)(dom % elem) << " result :" <<((dom/elem>1.5) && (((int)(dom+coefError*floor(dom/elem))%elem < 10) || ((int)(dom-coefError*floor(dom/elem))%elem <10) )) << '\n';
+          //std::cout << (int)(dom+coefError*floor(dom/elem))%elem << " " << (int)(dom-coefError*floor(dom/elem))%elem << '\n';
         }
 
         if (
@@ -171,7 +185,7 @@ removeHarmonic(std::vector<int> freq)
       }
     }
   }
-  std::cout << "\n" <<"************************" <<'\n';
+  //std::cout << "\n" <<"************************" <<'\n';
   return domFreq;
 }
 
@@ -187,7 +201,7 @@ printFFT(RECORD_STATE record)
   ERRCHECK(result);
 
   //Lenght of the FFT data
-  const int column=(const int)data->length/40;
+  const int column=(const int)data->length/10;
   const int line=10;
 
   showFFT(*data,column,line);
@@ -197,13 +211,13 @@ printFFT(RECORD_STATE record)
   /*
       Get the Info (Dominant Frequency)
   */
-  result = record.dsp->getParameterInfo(3, &desc);
-  ERRCHECK(result);
+  //result = record.dsp->getParameterInfo(3, &desc);
+  //ERRCHECK(result);
 
-  result = record.dsp->getParameterFloat(3,0,d,32);
-  ERRCHECK(result);
+  //result = record.dsp->getParameterFloat(3,0,d,32);
+  //ERRCHECK(result);
 
-  std::cout  << "\n\n"<< desc->name << " : " << d << "   " << atoi(d) << '\n';
+  //std::cout  << "\n\n"<< desc->name << " : " << d << "   " << atoi(d) << '\n';
 }
 
 
@@ -418,7 +432,7 @@ playRecord(FMOD::System &system, RECORD_STATE &record)
     result = system.playSound(record.sound, NULL, false, &record.channel);
     ERRCHECK(result);
 
-    result = record.channel->setVolume((float)1);
+    result = record.channel->setVolume((float)2);
     ERRCHECK(result);
 
     createDSP(record, system);
